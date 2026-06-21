@@ -33,7 +33,7 @@ const Login = () => {
 
     return (
     <>
-    <div className="min-h-screen flex justify-center items-center bg-white rounded-lg p-8">
+    <div className="min-h-screen flex flex-col justify-center items-center  bg-white rounded-lg p-8">
         <input
             type="email" 
             placeholder="Email"
@@ -58,6 +58,13 @@ const Login = () => {
             onClick={handleLogin}
         >
             Login
+        </button>
+
+        <button
+            onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`}
+            className="w-full bg-red-500 text-white p-2 rounded mt-3"
+            >
+            Login with Google
         </button>
 
         <p> 
