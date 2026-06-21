@@ -21,7 +21,7 @@ const Notes = () => {
     const fetchNotes = async () => {
         const token = localStorage.getItem("token")
 
-        const response = await fetch("http://localhost:8000/notes", 
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/notes`, 
             {
                 headers : {"Authorization" : `Bearer ${token}`}
             }
@@ -35,7 +35,7 @@ const Notes = () => {
     const createNote = async() => {
         const token = localStorage.getItem("token") 
 
-        const response = await fetch("http://localhost:8000/notes",{
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/notes`,{
             method : "POST",
             headers : {
                 "Content-Type" : "application/json",
@@ -58,7 +58,7 @@ const Notes = () => {
     const updateNote = async () => {
         const token = localStorage.getItem("token")
 
-        const response = await fetch(`http://localhost:8000/notes/${editId}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/notes/${editId}`, {
             method: "PUT", 
             headers : {
                 "Authorization": `Bearer ${token}`,
@@ -76,7 +76,7 @@ const Notes = () => {
         // ------- delete notes  -----------------------------------------------------------------------------------------------------------------
         const deleteNote = async (noteId) => {
           const token = localStorage.getItem("token")
-          const response = await fetch(`http://localhost:8000/notes/${noteId}`,{
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/notes/${noteId}`,{
             method: "DELETE",
             headers : {
               "Authorization": `Bearer ${token }`,
