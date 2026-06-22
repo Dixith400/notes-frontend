@@ -1,83 +1,80 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { authService } from "../services/authService";
+import { tokenStorage } from "../utils/tokenStorage";
+import AuthShell from "./ui/AuthShell";
+import FormField from "./ui/FormField";
 
 const Login = () => {
-    const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
-    const [error, setError] = useState("")
-    const navigate = useNavigate()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-    const handleLogin = async () => {
+  const handleLogin = async () => {
+    const data = await authService.login(email, password);
 
-        const response  = await fetch(`${import.meta.env.VITE_API_URL}/login`, {
-            method : "POST",
-            headers : {"Content-Type" : "application/json"},
-            body : JSON.stringify({email, password})
-        })
+    if (data.token) {
+      tokenStorage.set(data.token);
+      navigate("/notes");
+      return;
+    }
 
-        const data = await response.json()    
-        
-        if (data.token) {
-            localStorage.setItem("token", data.token)
-            console.log(data)
-            console.log("Logged in! token saved ")  
-            navigate("/notes")
-        }
-        else {
-            setError(data.error)
-           
-        }
+    setError(data.error);
+  };
 
-
-  }
-
-    return (
-    <>
-    <div className="min-h-screen flex flex-col justify-center items-center  bg-white rounded-lg p-8">
-        <input
-            type="email" 
-            placeholder="Email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            className="w-full "
+  return (
+    <AuthShell
+      title="Welcome back"
+      subtitle="Log in to continue writing and organizing your notes."
+    >
+      <div className="space-y-4">
+        <FormField
+          label="Email"
+          type="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
         />
 
-        <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className="w-full"
+        <FormField
+          label="Password"
+          type="password"
+          placeholder="Your password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
         />
-        {error && (
-            <p className="text-red-500 text-sm mb-3">{error}</p>
-        )}
 
-        <button 
-            className="w-full bg-blue-500 text-white p-2 rounded"
-            onClick={handleLogin}
+        {error && <p className="text-sm font-medium text-rose-600">{error}</p>}
+
+        <button
+          className="w-full rounded-xl bg-emerald-700 p-3 font-semibold text-white shadow-sm transition hover:bg-emerald-800"
+          onClick={handleLogin}
         >
-            Login
+          Login
         </button>
 
         <button
-            onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`}
-            className="w-full bg-red-500 text-white p-2 rounded mt-3"
-            >
-            Login with Google
+          onClick={() => {
+            window.location.href = authService.getGoogleLoginUrl();
+          }}
+          className="w-full rounded-xl border border-stone-200 bg-white p-3 font-semibold text-stone-800 transition hover:bg-stone-100"
+        >
+          Login with Google
         </button>
 
-        <p> 
-            No Account?{" "}
-            <span  onClick={() => navigate("/register")} className="text-blue-500 cursor-pointer">Register</span>
+        <p className="text-center text-sm text-stone-600">
+          No account?{" "}
+          <button
+            onClick={() => navigate("/register")}
+            className="font-semibold text-emerald-700"
+          >
+            Register
+          </button>
         </p>
-
-       
-        
-    </div>
-    </>
-    )
-}
-
+      </div>
+    </AuthShell>
+  );
+};
 
 export default Login;

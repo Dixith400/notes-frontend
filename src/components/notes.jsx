@@ -1,197 +1,109 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import NoteCard from "./notes/NoteCard";
+import NoteForm from "./notes/NoteForm";
+import { notesService } from "../services/notesService";
+import { tokenStorage } from "../utils/tokenStorage";
 
 const Notes = () => {
-    const [notes, setNotes] = useState([])
-    const [name, setName] = useState("")
-    const [content, setContent] = useState("")
-    const [editId, setEditId] = useState(null)
-    const [editName, setEditName] = useState("")
-    const [editContent, setEditContent] = useState("")
-    const navigate = useNavigate()
+  const [notes, setNotes] = useState([]);
+  const [name, setName] = useState("");
+  const [content, setContent] = useState("");
+  const [editId, setEditId] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const navigate = useNavigate();
 
-    useEffect(() => {fetchNotes()},[])
+  // Load notes for the logged-in user before rendering the grid.
+  async function fetchNotes() {
+    const data = await notesService.list();
+    setNotes(data);
+  }
 
-    const logout = () => {
-      localStorage.removeItem("token")
-      navigate("/login")
-    }
-    // ------- fetchNotes -----------------------------------------------------------------------------------------------------------------
+  useEffect(() => {
+    notesService.list().then((data) => {
+      setNotes(data);
+    });
+  }, []);
 
-    const fetchNotes = async () => {
-        const token = localStorage.getItem("token")
+  const logout = () => {
+    tokenStorage.clear();
+    navigate("/login");
+  };
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/notes`, 
-            {
-                headers : {"Authorization" : `Bearer ${token}`}
-            }
-        )
-        const data = await response.json()
-        setNotes(data)
-    }
+  // Create, update, and delete all refresh the list to keep UI state simple.
+  const createNote = async () => {
+    await notesService.create({ name, content });
+    await fetchNotes();
+    setContent("");
+    setName("");
+  };
 
-    // ------- create notes  ------------
+  const updateNote = async () => {
+    await notesService.update(editId, { name: editName, content: editContent });
+    setEditId(null);
+    await fetchNotes();
+  };
 
-    const createNote = async() => {
-        const token = localStorage.getItem("token") 
+  const deleteNote = async (noteId) => {
+    await notesService.delete(noteId);
+    await fetchNotes();
+  };
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/notes`,{
-            method : "POST",
-            headers : {
-                "Content-Type" : "application/json",
-                "Authorization" :   `Bearer ${token}`
-                
-            },
-            body : JSON.stringify({name, content})
-            
-        })
+  const startEdit = (note) => {
+    setEditId(note._id);
+    setEditName(note.name);
+    setEditContent(note.content);
+  };
 
-        const data = await response.json()
-        console.log(data)
-        fetchNotes()
-        setContent("")
-        setName("")
-    }
+  return (
+    <main className="min-h-screen bg-[#f4f0e8] px-4 py-6 text-stone-950 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <header className="mb-6 flex flex-col gap-4 rounded-2xl border border-stone-200 bg-white/90 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">
+              Workspace
+            </p>
+            <h1 className="mt-1 text-3xl font-bold">My Notes</h1>
+          </div>
+          <button
+            onClick={logout}
+            className="w-full rounded-xl bg-stone-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-stone-800 sm:w-auto"
+          >
+            Logout
+          </button>
+        </header>
 
-    // ------- update notes  -----------------------------------------------------------------------------------------------------------------
+        <NoteForm
+          title="Create a note"
+          name={name}
+          content={content}
+          submitLabel="Create Note"
+          onNameChange={setName}
+          onContentChange={setContent}
+          onSubmit={createNote}
+        />
 
-    const updateNote = async () => {
-        const token = localStorage.getItem("token")
+        <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {notes.map((note) => (
+            <NoteCard
+              key={note._id}
+              note={note}
+              isEditing={editId === note._id}
+              editName={editName}
+              editContent={editContent}
+              onEditNameChange={setEditName}
+              onEditContentChange={setEditContent}
+              onSave={updateNote}
+              onCancelEdit={() => setEditId(null)}
+              onStartEdit={() => startEdit(note)}
+              onDelete={() => deleteNote(note._id)}
+            />
+          ))}
+        </section>
+      </div>
+    </main>
+  );
+};
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/notes/${editId}`, {
-            method: "PUT", 
-            headers : {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type" : "application/json"
-            },
-            body : JSON.stringify({name: editName, content: editContent})
-        })
-
-        const data = await response.json()
-        console.log(data)
-        setEditId(null)
-        fetchNotes()
-    }
-
-        // ------- delete notes  -----------------------------------------------------------------------------------------------------------------
-        const deleteNote = async (noteId) => {
-          const token = localStorage.getItem("token")
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/notes/${noteId}`,{
-            method: "DELETE",
-            headers : {
-              "Authorization": `Bearer ${token }`,
-             
-            }
-          } )
-
-          const data = await response.json()
-          console.log(data)
-          fetchNotes()
-          
-        }
-    
-
-    return (
-            <div className="min-h-screen bg-gray-100 p-8">
-                
-              <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">My Notes</h1>
-                <button
-                  onClick={logout}
-                  className="bg-red-500 text-white px-4 py-2 rounded"
-                >
-                  Logout
-                </button>
-              </div>
-
-                <div className="bg-white rounded-lg p-4 shadow mb-6">
-                    <input
-                        type="text"
-                        placeholder="Title"
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        className="w-full border p-2 rounded mb-3"
-                    />
-                    
-                    <textarea
-                        placeholder="Content"
-                        value={content}
-                        onChange={e => setContent(e.target.value)}
-                        className="w-full border p-2 rounded mb-3"
-                        rows={4}
-                    />
-                    
-                    <button
-                        onClick={createNote}
-                        className="bg-blue-500 text-white px-4 py-2 rounded"
-                    >
-                        Create Note
-                    </button>
-                </div>
-          
-                
-                <div className="grid grid-cols-3 gap-4">
-
-
-   {/* ------ this is also the return statement itself just for convenience the indentation is set different  */}               
-                  
-                {notes.map(note => (
-                  <div key={note._id} className="bg-white rounded-lg p-4 shadow">
-                    
-                    {editId === note._id ? (
-                      <>
-                        <input
-                          type="text"
-                          value={editName}
-                          onChange={e => setEditName(e.target.value)}
-                          className="w-full border p-2 rounded mb-3"
-                        />
-                        <textarea
-                          value={editContent}
-                          onChange={e => setEditContent(e.target.value)}
-                          className="w-full border p-2 rounded mb-3"
-                          rows={4}
-                        />
-                        <button
-                          onClick={updateNote}
-                          className="bg-green-500 text-white px-4 py-2 rounded mr-2"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditId(null)}
-                          className="bg-gray-500 text-white px-4 py-2 rounded"
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <h2 className="text-lg font-bold">{note.name}</h2>
-                        <p className="text-gray-600 mt-2">{note.content}</p>
-                        <button
-                          onClick={() => {
-                            setEditId(note._id)
-                            setEditName(note.name)
-                            setEditContent(note.content)
-                          }}
-                          className="bg-yellow-500 text-white px-4 py-2 rounded mt-3"
-                        >
-                          Edit
-                        </button>
-                        <button
-                            onClick={() => deleteNote(note._id)}
-                            className="bg-red-500 text-white px-4 py-2 rounded mt-3 ml-2"
-                          >
-                            Delete
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ))}
-                </div>
-            </div>
-)
-}
-
-export default Notes
+export default Notes;

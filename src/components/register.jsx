@@ -1,70 +1,69 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import.meta.env.VITE_API_URL
+import { authService } from "../services/authService";
+import AuthShell from "./ui/AuthShell";
+import FormField from "./ui/FormField";
 
 const Register = () => {
-    const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
-    const [error, setError] = useState("")
-    const navigate = useNavigate()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-    const handleClick = async () => {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/register`, {
-            method : "POST",
-            headers : {"Content-type": "application/json"},
-            body : JSON.stringify({email, password})
-        })
+  const handleClick = async () => {
+    const data = await authService.register(email, password);
 
-        const data = await response.json()
-        console.log(data)
-
-        if (data.message) {
-            navigate("/notes")
-        } else {
-            setError(data.error)
-        }
-
+    if (data.message) {
+      navigate("/notes");
+      return;
     }
 
-    return (
-        <>
-        <div className="min-h-screen flex justify-center items-center bg-white rounded text-black p-8">
+    setError(data.error);
+  };
 
-            <input
-                type="email" 
-                placeholder="Email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="w-full rounded text-black m-2" 
+  return (
+    <AuthShell
+      title="Create account"
+      subtitle="Register with your email and start keeping your notes in one place."
+    >
+      <div className="space-y-4">
+        <FormField
+          label="Email"
+          type="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
 
-            />
+        <FormField
+          label="Password"
+          type="password"
+          placeholder="Choose a password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
 
-            <input 
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full rounded m-2"
-            />
+        {error && <p className="text-sm font-medium text-rose-600">{error}</p>}
 
-            {error && (
-                <p className="text-red-500 text-sm mb-3">{error}</p>
-            )}
+        <button
+          className="w-full rounded-xl bg-emerald-700 p-3 font-semibold text-white shadow-sm transition hover:bg-emerald-800"
+          onClick={handleClick}
+        >
+          Register
+        </button>
 
-            <button 
-                className="w-full bg-blue-500 rounded my-2  text-white"
-                onClick={handleClick}>
-                Register 
-            </button>
+        <p className="text-center text-sm text-stone-600">
+          Already have an account?{" "}
+          <button
+            className="font-semibold text-emerald-700"
+            onClick={() => navigate("/login")}
+          >
+            Login
+          </button>
+        </p>
+      </div>
+    </AuthShell>
+  );
+};
 
-            <p>Already have an account?{" "}
-                <span  className="text-blue-500 cursor-pointer" onClick={() => navigate("/login")}>
-                    Login
-                </span>
-            </p>
-        </div>
-        </>
-    )
-}
-
-export default Register
+export default Register;
